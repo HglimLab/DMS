@@ -1,17 +1,17 @@
-import multiprocessing
+import multiprocessing # 병렬 처리 API
 import time
 import datetime as dt
 import os
 import pandas as pd
 import numpy as np
 import cv2
-import pyrealsense2 as rs
+import pyrealsense2 as rs # Realsense 카메라를 Python 으로 제어할 수 있는 패키지
 
 import pyaudio
 from scipy.io.wavfile import write
-from tqdm import tqdm
+from tqdm import tqdm # 프로세스 바
 
-from PyQt5.QtWidgets import *
+from PyQt5.QtWidgets import * # 파이썬 기반 GUI 제작
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5 import uic
@@ -25,22 +25,22 @@ from pydub.playback import play
 TOTAL_PROCESS_NUM = multiprocessing.Value('d', 3) ### Add 1 each time a sensor is added. ###
 process_cnt = multiprocessing.Value('d', 0)
 
-lock = multiprocessing.Lock()
+lock = multiprocessing.Lock() # 쓰레딩 락 걸어주는 역할, 화장실에 비유하면 쉬움, 하나의 thread에 process가 들어가면 lock 걸어줌
 def sync_process():
     global process_cnt, TOTAL_PROCESS_NUM
 
-    lock.acquire()
+    lock.acquire() # 쓰레딩 락을 풀고 해당 쓰레딩 획득하게 됨.
     try:
         process_cnt.value += 1
     finally:
-        lock.release()
+        lock.release() # 다른 process가 쓰레드를 사용할 수 있게 풀어줌.
 
     while process_cnt.value != TOTAL_PROCESS_NUM.value:
         pass
 
 
 def receive_CAN(d_name, DATASET_PATH, P_db, C_db, can_bus, stop_event):
-    print(f"[INFO] PID[{os.getpid()}] '{d_name}' process is started.")
+    print(f"[INFO] PID[{os.getpid()}] '{d_name}' process is started.") # 부모 process ID 리턴
 
     CAN_PATH = DATASET_PATH + '/CAN/'
     if not os.path.isdir(CAN_PATH):
@@ -60,7 +60,7 @@ def receive_CAN(d_name, DATASET_PATH, P_db, C_db, can_bus, stop_event):
     #         db_msg.append(msg)
     #         P_msg_name.append(msg.name)
     #         MSG_LENGTH += len(msg.signals)
-    for msg in C_db.messages:
+    for msg in C_db.messages:   # 만약 C.db의 메시지가 C.msg_list안에 있으면 msg를 append한다라는 의미?
         if msg.name in C_msg_list:
             db_msg.append(msg)
             C_msg_name.append(msg.name)
@@ -101,7 +101,7 @@ def receive_CAN(d_name, DATASET_PATH, P_db, C_db, can_bus, stop_event):
                             df.to_csv(CAN_PATH + f"{start_time}.csv", index=False)
                             first = False
                         else:
-                            df.to_csv(CAN_PATH + f"{start_time}.csv", mode='a', header=False, index=False)
+                            df.to_csv(CAN_PATH + f"{start_time}.csv", mode='a', header=False, index=False) # mode 'a' : 기존의 값 아래에 추가하여 입력
 
                         cnt += 1
                         df = df[0:0]
@@ -120,6 +120,7 @@ def receive_CAN(d_name, DATASET_PATH, P_db, C_db, can_bus, stop_event):
             record_time = str(dt.timedelta(seconds=(st - st_time))).split(".")[0]
             print("[INFO] TIME[{}] SPD[{:7.2f}] BRAKE_PRES[{:7.2f}] STEER_ANGLE[{:7.2f}]".format(record_time, \
                         can_monitoring['CAN MESSAGE NAME HERE'], can_monitoring['CAN MESSAGE NAME HERE'], can_monitoring['CAN MESSAGE NAME HERE']), end='\r')
+            # 위에서는 Time, SPD, Brake_PRES, STEER_ANGLE 불러와서 print 함
             time_total += (time.time() - st)
             cycle += 1
 
@@ -154,7 +155,7 @@ def receive_video(d_name, DATASET_PATH, frontView, sideView, send_conn, stop_eve
 
     ### ...from Camera 1 ###
     if frontView:
-        pipeline_1 = rs.pipeline()
+        pipeline_1 = rs.pipeline() # 모델을 가속, 재사용, 관리 및 배포하는 프로세스를 구현하고 표준화
         config_1 = rs.config()
 
         config_1.enable_device("043322071182")
@@ -172,7 +173,7 @@ def receive_video(d_name, DATASET_PATH, frontView, sideView, send_conn, stop_eve
         config_2.enable_stream(rs.stream.infrared, 1, 1280, 720, rs.format.y8, fps)
 
 
-    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    fourcc = cv2.VideoWriter_fourcc(*'XVID') # 동영상 저장
     # fourcc = cv2.VideoWriter_fourcc('M', 'J', 'P', 'G')
 
     if frontView:
@@ -248,7 +249,7 @@ def receive_video(d_name, DATASET_PATH, frontView, sideView, send_conn, stop_eve
 
             ### Camera 1 ###
             if frontView:
-                color_frame_1 = frames_1.get_color_frame()
+                color_frame_1 = frames_1.get_color_frame() # 1.Frame 마다 가져와서 아래 과정에서 2.numpy로 바꿔주고 3.저장
                 ir_frame_1 = frames_1.get_infrared_frame()
                 depth_frame_1 = frames_1.get_depth_frame()
 
@@ -257,7 +258,7 @@ def receive_video(d_name, DATASET_PATH, frontView, sideView, send_conn, stop_eve
                     continue
 
                 ### Convert images to numpy arrays ###
-                depth_image_1 = np.asanyarray(colorizer1.colorize(depth_frame_1).get_data())
+                depth_image_1 = np.asanyarray(colorizer1.colorize(depth_frame_1).get_data()) # get_data : datetime 별로 데이터  
                 color_image_1 = np.asanyarray(color_frame_1.get_data())
                 ir_image_1 = np.asanyarray(ir_frame_1.get_data())
 
