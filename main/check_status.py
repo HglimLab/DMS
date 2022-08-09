@@ -1,3 +1,5 @@
+# 데이터 Parsing Log 기록 뜨는 것
+
 import math
 
 def check_driving_cycle(P_db, can_bus):
@@ -9,20 +11,20 @@ def check_driving_cycle(P_db, can_bus):
     cycle_cnt = 0
     start_flag = False
 
-    while True:
+    while True: # True일때만 while문 실행
         can_msg = can_bus.recv()
         if can_msg.arbitration_id == CG_CAN.frame_id:
             can_dict =P_db.decode_message(can_msg.arbitration_id, can_msg.data)
             if can_dict["CAN ID HERE"] == "CAN VALUE HERE":
                 cycle_cnt += 1
                 start_flag = True
-            elif not start_flag:
+            elif not start_flag: # start_flag = False 이면 실행
                 print("[REQUEST] Starting the vehicle is needed.")
                 start_flag = True
 
         if cycle_cnt >= 10:
             print("[INFO] Done.")
-            break
+            break # while 문 완전히 종료
 
 
 def check_velocity(P_db, can_bus):
@@ -63,7 +65,7 @@ def check_driver(DRIVER_LIST):
         print()
         print("#" * 10, "DRIVER ID", "#" * 10)
         for i, name in enumerate(DRIVER_LIST):
-            if i != len(DRIVER_LIST) - 1:
+            if i != len(DRIVER_LIST) - 1: # != 같지 않다 의미
                 print(f"{DRIVER_LIST.index(DRIVER_LIST[i])}: {DRIVER_LIST[i]}, ", end=' ')
             else:
                 print(f"{DRIVER_LIST.index(DRIVER_LIST[i])}: {DRIVER_LIST[i]}")
